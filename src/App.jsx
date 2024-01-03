@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 const KEY = import.meta.env.VITE_API_KEY;
+
+NavBar.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};
 
 function NavBar({ children }) {
   return <nav className="nav-bar">{children}</nav>;
@@ -31,6 +39,10 @@ function SearchBar() {
   );
 }
 
+NumOfResults.propTypes = {
+  movies: PropTypes.array,
+};
+
 function NumOfResults({ movies }) {
   return (
     <p className="num-results">
@@ -39,9 +51,23 @@ function NumOfResults({ movies }) {
   );
 }
 
+Main.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};
+
 function Main({ children }) {
   return <main className="main">{children}</main>;
 }
+
+Box.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};
 
 function Box({ children }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -56,6 +82,10 @@ function Box({ children }) {
   );
 }
 
+ListOfMovies.propTypes = {
+  movies: PropTypes.array,
+};
+
 function ListOfMovies({ movies }) {
   return (
     <ul className="list">
@@ -65,6 +95,10 @@ function ListOfMovies({ movies }) {
     </ul>
   );
 }
+
+ListOfMoviesItem.propTypes = {
+  movie: PropTypes.object,
+};
 
 function ListOfMoviesItem({ movie }) {
   return (
@@ -81,6 +115,10 @@ function ListOfMoviesItem({ movie }) {
   );
 }
 
+WatchedMovieList.propTypes = {
+  watched: PropTypes.array,
+};
+
 function WatchedMovieList({ watched }) {
   return (
     <ul className="list">
@@ -90,6 +128,10 @@ function WatchedMovieList({ watched }) {
     </ul>
   );
 }
+
+WatchedMovie.propTypes = {
+  movie: PropTypes.object,
+};
 
 function WatchedMovie({ movie }) {
   return (
@@ -113,6 +155,10 @@ function WatchedMovie({ movie }) {
     </li>
   );
 }
+
+WatchedSummary.propTypes = {
+  watched: PropTypes.array,
+};
 
 function WatchedSummary({ watched }) {
   const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
@@ -147,16 +193,33 @@ function WatchedSummary({ watched }) {
 export default function App() {
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const query = "Inception";
 
   useEffect(function () {
     async function fetchMovies() {
-      const res = await fetch(
-        `http://www.omdbapi.com/?apikey=${KEY}&s=Inception`
-      );
+      setIsLoading(true);
 
-      const data = await res.json();
+      try {
+        const res = await fetch(
+          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+        );
 
-      setMovies(data.Search);
+        if (!res.ok)
+          throw new Error("Something went wrong with fetching movies");
+
+        const data = await res.json();
+
+        if (data.response === "false") throw new Error("Movie not found");
+
+        setMovies(data.Search);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     fetchMovies();
@@ -171,7 +234,9 @@ export default function App() {
       </NavBar>
       <Main>
         <Box>
-          <ListOfMovies movies={movies} />
+          {isLoading && <Loader />}
+          {!isLoading && !error && <ListOfMovies movies={movies} />}
+          {error && <ErrorMessage message={error} />}
         </Box>
         <Box>
           <WatchedSummary watched={watched} />
@@ -180,4 +245,16 @@ export default function App() {
       </Main>
     </>
   );
+}
+
+function Loader() {
+  return <p className="loader">Loading...</p>;
+}
+
+ErrorMessage.propTypes = {
+  message: PropTypes.string,
+};
+
+function ErrorMessage({ message }) {
+  return <p className="error">{message}</p>;
 }
