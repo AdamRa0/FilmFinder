@@ -177,6 +177,18 @@ function SelectedMovie({ selectedId, onCloseMovie, onAddWatched, watched }) {
     [selectedId]
   );
 
+  useEffect(
+    function () {
+      if (!movie.Title) return;
+      document.title = `Movie | ${movie.Title}`;
+
+      return function () {
+        document.title = "Film Finder";
+      };
+    },
+    [movie.Title]
+  );
+
   return (
     <div className="details">
       {isLoading ? (
