@@ -160,6 +160,21 @@ function SelectedMovie({ selectedId, onCloseMovie, onAddWatched, watched }) {
 
   useEffect(
     function () {
+      document.addEventListener("keydown", function (e) {
+        if (e.code === "Escape") {
+          onCloseMovie();
+        }
+      });
+
+      return function () {
+        document.removeEventListener("keydown");
+      };
+    },
+    [onCloseMovie]
+  );
+
+  useEffect(
+    function () {
       async function getMovieDetails() {
         setIsLoading(true);
         const res = await fetch(
@@ -334,7 +349,11 @@ function WatchedSummary({ watched }) {
 
 export default function App() {
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useState(function () {
+    const storedValue = localStorage.getItem("watched");
+
+    return JSON.parse(storedValue);
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
@@ -357,6 +376,13 @@ export default function App() {
       watched.filter((watchedMovie) => watchedMovie.imdbID !== id)
     );
   }
+
+  useEffect(
+    function () {
+      localStorage.setItem("watched", JSON.stringify([...watched]));
+    },
+    [watched]
+  );
 
   useEffect(
     function () {
